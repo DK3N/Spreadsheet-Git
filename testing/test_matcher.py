@@ -1,4 +1,6 @@
 """Tests for src.matcher (Card 2): match_rows / compute_row_similarity."""
+import copy
+
 import pytest
 
 from conftest import make_table
@@ -195,12 +197,16 @@ def test_only_shared_headers_are_compared():
 
 
 def test_fallback_does_not_mutate_inputs():
-    a = make_table(H, ["1", "Ana", "NY"])
-    b = make_table(H)
-    _, deleted, _ = match_rows(make_table(["x"], ["1"]), make_table(["y"], ["1"]))
+    a = make_table(H, ["1", "Ana", "NY"], ["2", "Bo", "LA"])
+    b = make_table(H, ["2", "Bo", "LA"], ["3", "Cy", "SF"])
+    a_before = copy.deepcopy(a)
+    b_before = copy.deepcopy(b)
+    pairs, deleted, inserted = match_rows(a, b)
     deleted.clear()
-    match_rows(a, b)
-    assert len(a.rows) == 1
+    inserted.clear()
+    pairs.clear()
+    assert a == a_before
+    assert b == b_before
 
 
 # ---------- compute_row_similarity ----------
