@@ -1,0 +1,49 @@
+{
+  "key_col": "id",
+  "changes": [
+    {
+      "change_type": "MODIFIED",
+      "key_value": "103",
+      "old_index": 2,
+      "new_index": 1,
+      "cell_changes": [
+        {"column_value": "salary", "old_value": "91000", "new_value": "95000"}
+      ],
+      "raw_row": {"id": "103", "name": "Carla Diaz", "department": "Engineering", "salary": "95000"}
+    },
+    {
+      "change_type": "INSERTED",
+      "key_value": "109",
+      "old_index": null,
+      "new_index": 2,
+      "cell_changes": [],
+      "raw_row": {"id": "109", "name": "Iris Khan", "department": "Finance", "salary": "70000"}
+    },
+    {
+      "change_type": "MOVED",
+      "key_value": "102",
+      "old_index": 1,
+      "new_index": 6,
+      "cell_changes": [],
+      "raw_row": {"id": "102", "name": "Ben Ortiz", "department": "Marketing", "salary": "62000"}
+    },
+    {
+      "change_type": "MOVED_AND_MODIFIED",
+      "key_value": "104",
+      "old_index": 3,
+      "new_index": 7,
+      "cell_changes": [
+        {"column_value": "department", "old_value": "Sales", "new_value": "Marketing"}
+      ],
+      "raw_row": {"id": "104", "name": "Dan Lee", "department": "Marketing", "salary": "58000"}
+    },
+    {
+      "change_type": "DELETED",
+      "key_value": "106",
+      "old_index": 5,
+      "new_index": null,
+      "cell_changes": [],
+      "raw_row": {"id": "106", "name": "Finn Park", "department": "Sales", "salary": "60000"}
+    }
+  ]
+}
