@@ -30,11 +30,11 @@ def _location(change: RowChange) -> str:
     """Describes where the row was, using whichever indexes are available."""
     old, new = change.old_index, change.new_index
     if old is not None and new is not None:
-        return f"row {old} -> row {new}"
+        return f"row {old + 2} -> row {new + 2}"
     if old is not None:
-        return f"was row {old}"
+        return f"was row {old + 2}"
     if new is not None:
-        return f"now row {new}"
+        return f"now row {new + 2}"
     return ""
 
 def _render_row(change: RowChange, use_color: bool) -> list[str]:
