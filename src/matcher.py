@@ -19,12 +19,12 @@ def match_rows(
     """
 
     if not 0.0 <= threshold <= 1.0:
-        return ValueError("threshold must be between 0.0 and 1.0")
+        raise ValueError("threshold must be between 0.0 and 1.0")
     
 
     if key_col is not None:
         if key_col not in table_a.headers or key_col not in table_b.headers:
-            return ValueError(f"Key Column {key_col!r} must exist in both tables")
+            raise ValueError(f"Key Column {key_col!r} must exist in both tables")
     
         # takes in a table, returns a dictionary where key = CSV table key, value = row
         # also checks if every row has a unique key_col
@@ -39,7 +39,7 @@ def match_rows(
                         f"at row {row.row_index}"
                     )
                 if value in rows_by_key:
-                    return ValueError(
+                    raise ValueError(
                         f"Key column {key_col!r} has duplicate value {value!r}"
                     )
                 rows_by_key[value] = row
@@ -124,7 +124,7 @@ def compute_row_similarity(row_a: Row, row_b: Row, headers: list[str]) -> float:
     if not headers:
         return 0.0
     matches = sum(
-        row_a.cells.get(header, "") == rows_b.cells.get(header, "")
+        row_a.cells.get(header, "") == row_b.cells.get(header, "")
         for header in headers
     )
     return matches / len(headers)
