@@ -56,18 +56,18 @@ Output:
     department: 'Sales' -> 'Marketing'
 - DELETED  key=106  (was row 7)
 
-Summary: 1 modified, 1 inserted, 1 moved, 1 moved and modified, 1 deleted
+Summary: 1 added, 1 removed, 2 modified, 1 moved
 ```
 
 Options:
 
 | Option | What it does |
 |---|---|
-| `--key <column>` | Column that uniquely identifies a row. Rows are matched by this value. |
+| `--key <column>` | Required. Column that uniquely identifies a row. Rows are matched by this value. |
 | `--no-color` | Turn off colored output (color is also off when output is piped). |
 | `-h`, `--help` | Show usage help. |
 
-Exit codes: `0` success, `2` error (for example a file that doesn't exist or missing arguments).
+Exit codes: `0` success, `2` error (for example a missing file, a malformed CSV, duplicate or blank IDs, an unknown key column, or missing arguments). Errors print a one-line `error: ...` message.
 
 ## Project layout
 
@@ -103,12 +103,11 @@ Sample CSV fixtures go in `testing/test_cases/<case_name>/` (`base.csv`, `modifi
 
 ## Continuous integration
 
-GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every push and pull request. Run the tests locally before opening a PR. Two tests are marked as expected failures (`xfail`) for known CLI gaps; they don't turn CI red.
+GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every push and pull request. Run the tests locally before opening a PR.
 
 ## Known limitations
 
 - Rows must have a unique, non-blank value in the ID column.
-- Malformed CSVs (for example a row with the wrong number of values) and duplicate IDs currently crash the CLI with a Python traceback instead of a friendly message. This is covered by two expected-failure tests in `testing/test_end_to_end.py`.
 - Schema changes, column filtering, and JSON export are not available yet (Sprint 2).
 - Both files must be valid CSV with a header row and the same number of values on every row.
 - All values are compared as text (`1` and `01` are different).

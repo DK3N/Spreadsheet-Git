@@ -60,13 +60,18 @@ def render_diff_terminal(diff: DiffResult, use_color: bool = True) -> str:
         return "No differences found."
 
     lines: list[str] = []
-    counts: dict[str, int] = {}
     for change in changes:
         lines.extend(_render_row(change, use_color))
-        name = change.change_type.value.lower().replace("_", " ")
-        counts[name] = counts.get(name, 0) + 1
 
-    summary = ", ".join(f"{n} {name}" for name, n in counts.items())
+    kinds = [c.change_type for c in changes]
+    added = kinds.count(ChangeType.INSERTED)
+    removed = kinds.count(ChangeType.DELETED)
+    modified = kinds.count(ChangeType.MODIFIED) + kinds.count(ChangeType.MOVED_AND_MODIFIED)
+    moved = kinds.count(ChangeType.MOVED)
+
+    summary = f"{added} added, {removed} removed, {modified} modified"
+    if moved:
+        summary += f", {moved} moved"
     lines.append("")
     lines.append(f"Summary: {summary}")
-    return "\n".join(lines) 
+    return "\n".join(lines)
