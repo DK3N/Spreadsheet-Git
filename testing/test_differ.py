@@ -1,3 +1,4 @@
+
 """Tests for src.differ (Card #1101): compute_diff / diff_cells."""
 
 import csv
@@ -632,7 +633,7 @@ class TestWithRealMatcher:
         ]
 
     def test_no_key_finds_a_small_edit_by_similarity(self):
-        headers =[f"c{i}" for i in range(10)]
+        headers = [f"c{i}" for i in range(10)]
         row = [f"v{i}" for i in range(10)]
         edited = row[:-1] + ["changed"]
         other = [f"other{i}" for i in range(10)]
@@ -644,3 +645,114 @@ class TestWithRealMatcher:
 
     def test_example_fixture(self):
         assert_matches_example()
+
+
+# ---------- Sprint 2: Column Change Detection ----------
+
+def test_added_column():
+    old = make_table(["id", "name"], [["1", "John"]])
+    new = make_table(["id", "name", "age"], [["1", "John", "25"]])
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.added_columns == ["age"]
+    assert result.removed_columns == []
+    assert result.columns_reordered is False
+
+
+def test_removed_column():
+    old = make_table(["id", "name", "age"], [["1", "John", "25"]])
+    new = make_table(["id", "name"], [["1", "John"]])
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.added_columns == []
+    assert result.removed_columns == ["age"]
+    assert result.columns_reordered is False
+
+
+def test_reordered_columns():
+    old = make_table(["id", "name", "age"], [["1", "John", "25"]])
+    new = make_table(["age", "id", "name"], [["25", "1", "John"]])
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.added_columns == []
+    assert result.removed_columns == []
+    assert result.columns_reordered is True
+    assert result.changes == []
+
+
+def test_added_blank_column():
+    old = make_table(["id", "name"], [["1", "John"]])
+    new = make_table(["id", "name", "email"], [["1", "John", ""]])
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.added_columns == ["email"]
+    assert result.changes == []
+
+
+def test_removed_blank_column():
+    old = make_table(["id", "name", "email"], [["1", "John", ""]])
+    new = make_table(["id", "name"], [["1", "John"]])
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.removed_columns == ["email"]
+    assert result.changes == []
+
+
+def test_no_column_changes():
+    old = make_table(["id", "name"], [["1", "John"]])
+    new = make_table(["id", "name"], [["1", "John"]])
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.added_columns == []
+    assert result.removed_columns == []
+    assert result.columns_reordered is False
+    assert result.changes == []
+
+
+def test_added_removed_and_reordered_columns():
+    old = make_table(
+        ["id", "name", "phone"],
+        [["1", "John", "123"]]
+    )
+    new = make_table(
+        ["name", "id", "email"],
+        [["John", "1", "john@email.com"]]
+    )
+
+    result = compute_diff(old, new, key_col="id")
+
+    assert result.added_columns == ["email"]
+    assert result.removed_columns == ["phone"]
+    assert result.columns_reordered is True
+
+
+def test_reordered_columns_with_real_matcher():
+    old = make_table(["id", "name", "age"], [["1", "John", "25"]])
+    new = make_table(["age", "id", "name"], [["25", "1", "John"]])
+
+    with patch("src.differ.match_rows", real_match_rows):
+        result = compute_diff(old, new, key_col="id")
+
+    assert result.columns_reordered is True
+    assert result.changes == []
+
+
+def test_column_changes_terminal_output():
+    from src.printer import render_diff_terminal
+
+    old = make_table(["id", "name"], [["1", "John"]])
+    new = make_table(["id", "name", "email"], [["1", "John", ""]])
+
+    result = compute_diff(old, new, key_col="id")
+    output = render_diff_terminal(result, use_color=False)
+
+    assert "Column Changes:" in output
+    assert "+ Column added: email" in output
+    assert "No row changes detected." in output
+    assert "No differences found." not in output
