@@ -27,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     diff_cmd = sub.add_parser("diff", help="compare two CSV files")
     diff_cmd.add_argument("file_a", help="the original CSV")
     diff_cmd.add_argument("file_b", help="the changed CSV")
-    diff_cmd.add_argument("--key", help="column that uniquely identifies a row, e.g. id")
+    diff_cmd.add_argument("--key", required=True, help="column that uniquely identifies a row, e.g. id")
     diff_cmd.add_argument("--no-color", action="store_true", help="turn off colored output")
 
     merge_cmd = sub.add_parser("merge", help="3-way merge of two edited CSVs")
@@ -44,11 +44,17 @@ def run_diff(args: argparse.Namespace) -> int:
     try:
         table_a = csv_parser.read_csv(args.file_a)
         table_b = csv_parser.read_csv(args.file_b)
+        result = differ.compute_diff(table_a, table_b, key_col=args.key)
     except FileNotFoundError as err:
         print(f"error: file not found: {err.filename}", file=sys.stderr)
         return EXIT_ERROR
+    except OSError as err:
+        print(f"error: cannot read {err.filename}: {err.strerror}", file=sys.stderr)
+        return EXIT_ERROR
+    except ValueError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return EXIT_ERROR
 
-    result = differ.compute_diff(table_a, table_b, key_col=args.key)
     use_color = sys.stdout.isatty() and not args.no_color
     print(printer.render_diff_terminal(result, use_color=use_color))
     return EXIT_OK

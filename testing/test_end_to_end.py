@@ -3,8 +3,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 from src.cli import EXIT_ERROR, EXIT_OK, main
 
 CASES = Path(__file__).parent / "test_cases"
@@ -30,7 +28,7 @@ def test_example_case_reports_every_change_type(capsys):
     assert "DELETED  key=106" in out
     assert "MOVED  key=102" in out
     assert "department: 'Sales' -> 'Marketing'" in out
-    assert "Summary: 1 modified, 1 inserted, 1 moved, 1 moved and modified, 1 deleted" in out
+    assert "Summary: 1 added, 1 removed, 2 modified, 1 moved" in out
 
 
 def test_example_case_matches_expected_diff_file(capsys):
@@ -65,7 +63,7 @@ def test_quoted_values_and_embedded_newlines(capsys):
     assert "MODIFIED  key=1" in out
     assert "note: 'said \"hi\"' -> 'said \"bye\"'" in out
     assert "INSERTED  key=3" in out
-    assert "Summary: 1 modified, 1 inserted" in out
+    assert "Summary: 1 added, 0 removed, 1 modified" in out
 
 
 def test_no_color_flag_removes_ansi_codes(capsys):
@@ -104,21 +102,18 @@ def test_missing_file_gives_clear_error_and_exit_code_2():
     assert "Traceback" not in result.stderr
 
 
-# ---------- known gaps: the CLI crashes instead of printing a clear error ----------
-# These are expected to fail until the CLI catches ValueError from the parser/matcher
-# (Cards 1, 2, 4, 9). Remove the xfail mark once they pass.
+# ---------- bad input gives a clear error, not a traceback ----------
 
-@pytest.mark.xfail(reason="CLI does not catch ValueError yet; prints a traceback", strict=True)
 def test_duplicate_ids_give_clear_error(tmp_path):
     bad = tmp_path / "dup.csv"
     bad.write_text("id,name\n1,a\n1,b\n")
     good = CASES / "test_case_example" / "base.csv"
     result = run_cli("diff", str(bad), str(good), "--key", "id")
     assert result.returncode == EXIT_ERROR
+    assert "duplicate" in result.stderr
     assert "Traceback" not in result.stderr
 
 
-@pytest.mark.xfail(reason="CLI does not catch ValueError yet; prints a traceback", strict=True)
 def test_malformed_csv_gives_clear_error(tmp_path):
     bad = tmp_path / "bad.csv"
     bad.write_text("id,name\n1,a\n2\n")
@@ -126,3 +121,18 @@ def test_malformed_csv_gives_clear_error(tmp_path):
     result = run_cli("diff", str(bad), str(good), "--key", "id")
     assert result.returncode == EXIT_ERROR
     assert "Traceback" not in result.stderr
+
+
+def test_unknown_key_column_gives_clear_error():
+    folder = CASES / "test_case_example"
+    result = run_cli("diff", str(folder / "base.csv"), str(folder / "modified.csv"), "--key", "nope")
+    assert result.returncode == EXIT_ERROR
+    assert "error:" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_key_is_required():
+    folder = CASES / "test_case_example"
+    result = run_cli("diff", str(folder / "base.csv"), str(folder / "modified.csv"))
+    assert result.returncode == EXIT_ERROR
+    assert "--key" in result.stderr
