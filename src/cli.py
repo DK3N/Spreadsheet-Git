@@ -66,12 +66,17 @@ def run_merge(args: argparse.Namespace) -> int:
         base = csv_parser.read_csv(args.base)
         ours = csv_parser.read_csv(args.ours)
         theirs = csv_parser.read_csv(args.theirs)
+        result = merger.three_way_merge(base, ours, theirs, args.key)
+        csv_parser.write_csv(result.merged_table, args.output)
     except FileNotFoundError as err:
         print(f"error: file not found: {err.filename}", file=sys.stderr)
         return EXIT_ERROR
-
-    result = merger.three_way_merge(base, ours, theirs, args.key)
-    csv_parser.write_csv(result.merged_table, args.output)
+    except OSError as err:
+        print(f"error: cannot access {err.filename}: {err.strerror}", file=sys.stderr)
+        return EXIT_ERROR
+    except ValueError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return EXIT_ERROR
 
     if result.has_conflicts:
         print(f"Merged with {len(result.conflicts)} conflict(s). Wrote {args.output}")
