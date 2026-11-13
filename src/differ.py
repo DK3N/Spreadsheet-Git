@@ -1,8 +1,14 @@
+
 """
-PURPOSE: To compare two CSV tables and produce a comprehensive diff report capturing insertions, deletions, cell modifications, and physical line reordering.
+PURPOSE: To compare two CSV tables and produce a comprehensive diff report
+capturing insertions, deletions, cell modifications, physical line reordering,
+and changes to CSV columns.
+
 FUNCTIONS:
-- compute_diff: Use matcher.py results and classify each change as INSERTED, DELETED, MODIFIED, MOVED, or MOVED_AND_MODIFIED.
-- diff_cells: helper function that compares corresponding columns between two matched rows to detect and list individual cell-level edits.
+- compute_diff: Use matcher.py results and classify each change as INSERTED,
+  DELETED, MODIFIED, MOVED, or MOVED_AND_MODIFIED.
+- diff_cells: Compare corresponding columns between two matched rows.
+- detect_column_changes: Detect added, removed, and reordered columns.
 """
 
 from bisect import bisect_left
@@ -25,6 +31,38 @@ def diff_cells(row_a: Row, row_b: Row, headers: list[str]) -> list[CellChange]:
 
 def _merged_headers(table_a: Table, table_b: Table) -> list[str]:
     return list(dict.fromkeys(table_a.headers + table_b.headers))
+
+
+def detect_column_changes(
+    table_a: Table, table_b: Table
+) -> tuple[list[str], list[str], bool]:
+    """Detects columns that were added, removed, or reordered."""
+
+    old_headers = table_a.headers
+    new_headers = table_b.headers
+
+    # Find columns that are in the new CSV but not the old one
+    added_columns = [
+        col for col in new_headers if col not in old_headers
+    ]
+
+    # Find columns that were in the old CSV but are now missing
+    removed_columns = [
+        col for col in old_headers if col not in new_headers
+    ]
+
+    # Compare the order of columns that exist in both CSV files
+    old_common = [
+        col for col in old_headers if col in new_headers
+    ]
+
+    new_common = [
+        col for col in new_headers if col in old_headers
+    ]
+
+    columns_reordered = old_common != new_common
+
+    return added_columns, removed_columns, columns_reordered
 
 
 def _check_key_col(table: Table, key_col: Optional[str]) -> None:
@@ -93,9 +131,14 @@ def _row_change(
 
 
 def compute_diff(table_a: Table, table_b: Table, key_col: Optional[str] = None) -> DiffResult:
-    """Computes full diff report (inserted, deleted, modified, moved) between two tables."""
+    """Computes row changes and column changes between two tables."""
     _check_key_col(table_a, key_col)
     _check_key_col(table_b, key_col)
+
+    # Check for changes to the CSV columns
+    added_columns, removed_columns, columns_reordered = detect_column_changes(
+        table_a, table_b
+    )
 
     pairs, deleted, inserted = match_rows(table_a, table_b, key_col=key_col)
     _check_each_row_returned_once(table_a, [row_a for row_a, _ in pairs] + deleted, "table_a")
@@ -127,4 +170,10 @@ def compute_diff(table_a: Table, table_b: Table, key_col: Optional[str] = None) 
     for row in sorted(deleted, key=lambda r: r.row_index):
         changes.append(_row_change(ChangeType.DELETED, row, key_col, row.row_index, None))
 
-    return DiffResult(changes=changes)
+    # Return both row changes and column changes
+    return DiffResult(
+        changes=changes,
+        added_columns=added_columns,
+        removed_columns=removed_columns,
+        columns_reordered=columns_reordered,
+    )
