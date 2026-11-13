@@ -1,10 +1,11 @@
+
 """
 PURPOSE: To hold data classes that will be used throughout our project.
 FUNCTIONS: none, really.
 Contains Row, Table, CellChange, RowChange, MergeConflict, MergeResults, DiffResults
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Any
 
@@ -80,9 +81,16 @@ class MergeConflict:
 @dataclass
 class DiffResult:
     """
-    A list of row changes
+    Stores row changes and changes to the CSV columns.
     """
     changes: list[RowChange]
+
+    # Stores columns added or removed from the new CSV
+    added_columns: list[str] = field(default_factory=list)
+    removed_columns: list[str] = field(default_factory=list)
+
+    # Checks if the column order changed
+    columns_reordered: bool = False
 
 @dataclass
 class MergeResult:
