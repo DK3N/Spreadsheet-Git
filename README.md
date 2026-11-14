@@ -4,7 +4,7 @@ A command-line tool that compares two CSV files and reports which rows were adde
 
 Rows are matched by an ID column you choose, so reordering rows is not mistaken for a change.
 
-> **Status:** Sprint 1 is merged: CSV parsing, row matching, row diffing, the CLI, and automated tests with CI. Sprint 2 work (schema changes, column filtering, JSON export, clearer output) is in progress.
+> **Status:** Sprint 1 is merged: CSV parsing, row matching, row diffing, the CLI, and automated tests with CI. Sprint 2 work is in progress: schema change detection is merged; column filtering, JSON export, and clearer output are still to come.
 
 ## What it does
 
@@ -15,7 +15,9 @@ Given an old CSV, a new CSV, and an ID column, the tool reports:
 - **Modified** rows: same ID in both files, with the old and new value of each changed column
 - Summary counts for each of the above
 
-Planned for Sprint 2: schema changes (added, removed, reordered columns), comparing only selected columns, JSON report export, and grouped, readable terminal output.
+Schema changes are also reported: columns added to or removed from the new file, and whether the columns were reordered (reordering alone is not reported as row changes).
+
+Planned for Sprint 2: comparing only selected columns, JSON report export, and grouped, readable terminal output.
 
 Out of scope: a graphical interface, full version history, merge-conflict resolution, and live collaboration.
 
@@ -108,7 +110,7 @@ GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every 
 ## Known limitations
 
 - Rows must have a unique, non-blank value in the ID column.
-- Schema changes, column filtering, and JSON export are not available yet (Sprint 2).
+- Column filtering and JSON export are not available yet (Sprint 2).
 - Both files must be valid CSV with a header row and the same number of values on every row.
 - All values are compared as text (`1` and `01` are different).
 
