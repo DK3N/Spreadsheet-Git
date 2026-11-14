@@ -136,3 +136,20 @@ def test_key_is_required():
     result = run_cli("diff", str(folder / "base.csv"), str(folder / "modified.csv"))
     assert result.returncode == EXIT_ERROR
     assert "--key" in result.stderr
+
+
+# ---------- schema (column) changes, Card 6 ----------
+
+def test_added_and_removed_columns_are_reported(capsys):
+    code, out, _ = run_diff("columns_added_removed", capsys)
+    assert code == EXIT_OK
+    assert "Column added: email" in out
+    assert "Column removed: name" in out
+
+
+def test_reordered_columns_are_not_reported_as_row_changes(capsys):
+    code, out, _ = run_diff("columns_reordered", capsys)
+    assert code == EXIT_OK
+    assert "Columns reordered" in out
+    assert "No row changes detected" in out
+    assert "MODIFIED" not in out
