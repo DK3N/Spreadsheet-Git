@@ -4,7 +4,7 @@ A command-line tool that compares two CSV files and reports which rows were adde
 
 Rows are matched by an ID column you choose, so reordering rows is not mistaken for a change.
 
-> **Status:** Sprint 1 is merged: CSV parsing, row matching, row diffing, the CLI, and automated tests with CI. Sprint 2 work is in progress: schema change detection and JSON export are merged; column filtering and clearer output are still to come.
+> **Status:** Sprint 1 is merged: CSV parsing, row matching, row diffing, the CLI, and automated tests with CI. Sprint 2 work is in progress: schema change detection and JSON export are merged; column filtering is also in; clearer output is still to come.
 
 ## What it does
 
@@ -19,7 +19,9 @@ Schema changes are also reported: columns added to or removed from the new file,
 
 JSON export: add `--json report.json` to save the full comparison to a file (see Usage).
 
-Planned for Sprint 2: comparing only selected columns and grouped, readable terminal output.
+Column filter: add `--columns salary,department` to only compare those columns.
+
+Planned for Sprint 2: grouped, readable terminal output.
 
 Out of scope: a graphical interface, full version history, merge-conflict resolution, and live collaboration.
 
@@ -68,6 +70,7 @@ Options:
 | Option | What it does |
 |---|---|
 | `--key <column>` | Required. Column that uniquely identifies a row. Rows are matched by this value. |
+| `--columns <a,b>` | Only compare these columns, for example `--columns salary,department`. The `--key` column is always used to match rows. Errors if a column isn't in either file. |
 | `--json <path>` | Also save the comparison as a JSON report (summary counts, column changes, and every changed row with old and new values). Refuses to overwrite an input CSV. |
 | `--no-color` | Turn off colored output (color is also off when output is piped). |
 | `-h`, `--help` | Show usage help. |
@@ -122,7 +125,6 @@ GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every 
 ## Known limitations
 
 - Rows must have a unique, non-blank value in the ID column.
-- Column filtering is not available yet (Sprint 2).
 - Both files must be valid CSV with a header row and the same number of values on every row.
 - All values are compared as text (`1` and `01` are different).
 

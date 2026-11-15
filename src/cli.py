@@ -29,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     diff_cmd.add_argument("file_a", help="the original CSV")
     diff_cmd.add_argument("file_b", help="the changed CSV")
     diff_cmd.add_argument("--key", required=True, help="column that uniquely identifies a row, e.g. id")
+    diff_cmd.add_argument("--columns", metavar="COL[,COL...]", help="only compare these columns (the --key column is always used to match rows)")
     diff_cmd.add_argument("--no-color", action="store_true", help="turn off colored output")
     diff_cmd.add_argument("--json", metavar="PATH", help="also save the comparison as a JSON report")
 
@@ -46,6 +47,16 @@ def run_diff(args: argparse.Namespace) -> int:
     try:
         table_a = csv_parser.read_csv(args.file_a)
         table_b = csv_parser.read_csv(args.file_b)
+        if args.columns is not None:
+            wanted = [c.strip() for c in args.columns.split(",") if c.strip()]
+            if not wanted:
+                raise ValueError("--columns needs at least one column name")
+            known = set(table_a.headers) | set(table_b.headers)
+            missing = [c for c in wanted if c not in known]
+            if missing:
+                raise ValueError(f"column(s) not found in either file: {', '.join(missing)}")
+            table_a = differ.filter_columns(table_a, wanted, args.key)
+            table_b = differ.filter_columns(table_b, wanted, args.key)
         result = differ.compute_diff(table_a, table_b, key_col=args.key)
     except FileNotFoundError as err:
         print(f"error: file not found: {err.filename}", file=sys.stderr)
