@@ -130,6 +130,21 @@ def _row_change(
     )
 
 
+def filter_columns(table: Table, columns: list[str], key_col: str) -> Table:
+    """Returns a copy of table with only the selected columns plus the key column (kept so rows still match)."""
+    keep = [h for h in table.headers if h in columns or h == key_col]
+    positions = [i for i, h in enumerate(table.headers) if h in keep]
+    rows = [
+        Row(
+            row_index=row.row_index,
+            cells={h: row.cells[h] for h in keep if h in row.cells},
+            raw_values=[row.raw_values[i] for i in positions if i < len(row.raw_values)],
+        )
+        for row in table.rows
+    ]
+    return Table(headers=keep, rows=rows, delimiter=table.delimiter, line_terminator=table.line_terminator)
+
+
 def compute_diff(table_a: Table, table_b: Table, key_col: Optional[str] = None) -> DiffResult:
     """Computes row changes and column changes between two tables."""
     _check_key_col(table_a, key_col)
