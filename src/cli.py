@@ -2,16 +2,17 @@
 PURPOSE: To serve as the CLI entry point, parsing terminal flags/subcommands and dispatching execution to diff, merge, or test workflows with appropriate exit codes.
 FUNCTIONS:
 - build_parser: Sets up argparse command-line arguments, subcommands (diff, merge), and options like --key and --output.
-- run_diff: Orchestrates the read, diff, and terminal rendering pipeline for a 2-way comparison.
+- run_diff: Orchestrates the read, diff, and terminal rendering pipeline for a 2-way comparison, optionally saving a JSON report.
 - run_merge: Orchestrates the 3-way file read, merge resolution, output serialization, and conflict status reporting.
 - main: Top-level entry function executed when the tool is invoked from the command line.
 """
 
 import argparse
 import sys
+from pathlib import Path
 from typing import Optional
 
-from . import differ, merger, printer
+from . import differ, exporter, merger, printer
 from . import parser as csv_parser
 
 EXIT_OK = 0
@@ -29,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     diff_cmd.add_argument("file_b", help="the changed CSV")
     diff_cmd.add_argument("--key", required=True, help="column that uniquely identifies a row, e.g. id")
     diff_cmd.add_argument("--no-color", action="store_true", help="turn off colored output")
+    diff_cmd.add_argument("--json", metavar="PATH", help="also save the comparison as a JSON report")
 
     merge_cmd = sub.add_parser("merge", help="3-way merge of two edited CSVs")
     merge_cmd.add_argument("base", help="the common ancestor CSV")
@@ -55,8 +57,23 @@ def run_diff(args: argparse.Namespace) -> int:
         print(f"error: {err}", file=sys.stderr)
         return EXIT_ERROR
 
+    if args.json is not None:
+        inputs = (Path(args.file_a).resolve(), Path(args.file_b).resolve())
+        if Path(args.json).resolve() in inputs:
+            print("error: --json path must not be one of the input files", file=sys.stderr)
+            return EXIT_ERROR
+        try:
+            exporter.write_json_report(
+                result, args.json, key_col=args.key, file_a=args.file_a, file_b=args.file_b
+            )
+        except OSError as err:
+            print(f"error: cannot write {args.json}: {err.strerror}", file=sys.stderr)
+            return EXIT_ERROR
+
     use_color = sys.stdout.isatty() and not args.no_color
     print(printer.render_diff_terminal(result, use_color=use_color))
+    if args.json is not None:
+        print(f"\nJSON report saved to {args.json}")
     return EXIT_OK
 
 
