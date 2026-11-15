@@ -153,3 +153,56 @@ def test_reordered_columns_are_not_reported_as_row_changes(capsys):
     assert "Columns reordered" in out
     assert "No row changes detected" in out
     assert "MODIFIED" not in out
+
+
+# ---------- JSON export, Card 8 ----------
+
+def test_json_report_is_valid_and_matches_the_diff(tmp_path, capsys):
+    import json
+    folder = CASES / "test_case_example"
+    report_path = tmp_path / "report.json"
+    code = main(["diff", str(folder / "base.csv"), str(folder / "modified.csv"),
+                 "--key", "id", "--json", str(report_path)])
+    out, _ = capsys.readouterr()
+    assert code == EXIT_OK
+    assert "JSON report saved" in out
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["key_col"] == "id"
+    assert report["summary"] == {"added": 1, "removed": 1, "modified": 2, "moved": 1}
+    expected = json.loads((folder / "expected_diff.json").read_text())
+    assert {c["key_value"]: c["change_type"] for c in report["changes"]} == \
+           {c["key_value"]: c["change_type"] for c in expected["changes"]}
+    modified = next(c for c in report["changes"] if c["key_value"] == "103")
+    assert modified["cell_changes"] == [
+        {"column_value": "salary", "old_value": "91000", "new_value": "95000"}
+    ]
+
+
+def test_json_report_includes_column_changes(tmp_path):
+    import json
+    folder = CASES / "columns_added_removed"
+    report_path = tmp_path / "report.json"
+    result = run_cli("diff", str(folder / "base.csv"), str(folder / "modified.csv"),
+                     "--key", "id", "--json", str(report_path))
+    assert result.returncode == EXIT_OK
+    columns = json.loads(report_path.read_text(encoding="utf-8"))["columns"]
+    assert columns["added"] == ["email"]
+    assert columns["removed"] == ["name"]
+
+
+def test_json_path_cannot_overwrite_an_input_file(tmp_path):
+    folder = CASES / "test_case_example"
+    result = run_cli("diff", str(folder / "base.csv"), str(folder / "modified.csv"),
+                     "--key", "id", "--json", str(folder / "base.csv"))
+    assert result.returncode == EXIT_ERROR
+    assert "must not be one of the input files" in result.stderr
+
+
+def test_json_unwritable_path_gives_clear_error(tmp_path):
+    folder = CASES / "test_case_example"
+    result = run_cli("diff", str(folder / "base.csv"), str(folder / "modified.csv"),
+                     "--key", "id", "--json", str(tmp_path / "no_dir" / "r.json"))
+    assert result.returncode == EXIT_ERROR
+    assert "cannot write" in result.stderr
+    assert "Traceback" not in result.stderr
