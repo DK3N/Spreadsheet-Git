@@ -4,7 +4,7 @@ A command-line tool that compares two CSV files and reports which rows were adde
 
 Rows are matched by an ID column you choose, so reordering rows is not mistaken for a change.
 
-> **Status:** Sprint 1 is merged: CSV parsing, row matching, row diffing, the CLI, and automated tests with CI. Sprint 2 work is in progress: schema change detection is merged; column filtering, JSON export, and clearer output are still to come.
+> **Status:** Sprint 1 is merged: CSV parsing, row matching, row diffing, the CLI, and automated tests with CI. Sprint 2 work is in progress: schema change detection and JSON export are merged; column filtering and clearer output are still to come.
 
 ## What it does
 
@@ -17,7 +17,9 @@ Given an old CSV, a new CSV, and an ID column, the tool reports:
 
 Schema changes are also reported: columns added to or removed from the new file, and whether the columns were reordered (reordering alone is not reported as row changes).
 
-Planned for Sprint 2: comparing only selected columns, JSON report export, and grouped, readable terminal output.
+JSON export: add `--json report.json` to save the full comparison to a file (see Usage).
+
+Planned for Sprint 2: comparing only selected columns and grouped, readable terminal output.
 
 Out of scope: a graphical interface, full version history, merge-conflict resolution, and live collaboration.
 
@@ -66,10 +68,19 @@ Options:
 | Option | What it does |
 |---|---|
 | `--key <column>` | Required. Column that uniquely identifies a row. Rows are matched by this value. |
+| `--json <path>` | Also save the comparison as a JSON report (summary counts, column changes, and every changed row with old and new values). Refuses to overwrite an input CSV. |
 | `--no-color` | Turn off colored output (color is also off when output is piped). |
 | `-h`, `--help` | Show usage help. |
 
 Exit codes: `0` success, `2` error (for example a missing file, a malformed CSV, duplicate or blank IDs, an unknown key column, or missing arguments). Errors print a one-line `error: ...` message.
+
+### Saving a JSON report
+
+```bash
+python -m src.cli diff old.csv new.csv --key id --json report.json
+```
+
+The report has `summary` (added, removed, modified, moved), `columns` (added, removed, reordered), and `changes` (one entry per changed row, with `cell_changes` holding the old and new value of each changed column).
 
 ## Project layout
 
@@ -80,6 +91,7 @@ Exit codes: `0` success, `2` error (for example a missing file, a malformed CSV,
 | `src/matcher.py` | Pair rows between two files by ID column |
 | `src/differ.py` | Classify added, removed, and modified rows and their cell changes |
 | `src/printer.py` | Render results for the terminal |
+| `src/exporter.py` | Write the JSON report |
 | `src/cli.py` | Command-line entry point |
 | `testing/` | Unit tests, end-to-end tests (`test_end_to_end.py`), and sample CSV fixtures in `test_cases/` |
 
@@ -110,7 +122,7 @@ GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every 
 ## Known limitations
 
 - Rows must have a unique, non-blank value in the ID column.
-- Column filtering and JSON export are not available yet (Sprint 2).
+- Column filtering is not available yet (Sprint 2).
 - Both files must be valid CSV with a header row and the same number of values on every row.
 - All values are compared as text (`1` and `01` are different).
 
