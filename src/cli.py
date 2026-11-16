@@ -2,16 +2,17 @@
 PURPOSE: To serve as the CLI entry point, parsing terminal flags/subcommands and dispatching execution to diff, merge, or test workflows with appropriate exit codes.
 FUNCTIONS:
 - build_parser: Sets up argparse command-line arguments, subcommands (diff, merge), and options like --key and --output.
-- run_diff: Orchestrates the read, diff, and terminal rendering pipeline for a 2-way comparison.
+- run_diff: Orchestrates the read, diff, and terminal rendering pipeline for a 2-way comparison, optionally saving a JSON report.
 - run_merge: Orchestrates the 3-way file read, merge resolution, output serialization, and conflict status reporting.
 - main: Top-level entry function executed when the tool is invoked from the command line.
 """
 
 import argparse
 import sys
+from pathlib import Path
 from typing import Optional
 
-from . import differ, merger, printer
+from . import differ, exporter, merger, printer
 from . import parser as csv_parser
 
 EXIT_OK = 0
@@ -28,7 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
     diff_cmd.add_argument("file_a", help="the original CSV")
     diff_cmd.add_argument("file_b", help="the changed CSV")
     diff_cmd.add_argument("--key", required=True, help="column that uniquely identifies a row, e.g. id")
+    diff_cmd.add_argument("--columns", metavar="COL[,COL...]", help="only compare these columns (the --key column is always used to match rows)")
     diff_cmd.add_argument("--no-color", action="store_true", help="turn off colored output")
+    diff_cmd.add_argument("--json", metavar="PATH", help="also save the comparison as a JSON report")
 
     merge_cmd = sub.add_parser("merge", help="3-way merge of two edited CSVs")
     merge_cmd.add_argument("base", help="the common ancestor CSV")
@@ -44,6 +47,16 @@ def run_diff(args: argparse.Namespace) -> int:
     try:
         table_a = csv_parser.read_csv(args.file_a)
         table_b = csv_parser.read_csv(args.file_b)
+        if args.columns is not None:
+            wanted = [c.strip() for c in args.columns.split(",") if c.strip()]
+            if not wanted:
+                raise ValueError("--columns needs at least one column name")
+            known = set(table_a.headers) | set(table_b.headers)
+            missing = [c for c in wanted if c not in known]
+            if missing:
+                raise ValueError(f"column(s) not found in either file: {', '.join(missing)}")
+            table_a = differ.filter_columns(table_a, wanted, args.key)
+            table_b = differ.filter_columns(table_b, wanted, args.key)
         result = differ.compute_diff(table_a, table_b, key_col=args.key)
     except FileNotFoundError as err:
         print(f"error: file not found: {err.filename}", file=sys.stderr)
@@ -55,8 +68,23 @@ def run_diff(args: argparse.Namespace) -> int:
         print(f"error: {err}", file=sys.stderr)
         return EXIT_ERROR
 
+    if args.json is not None:
+        inputs = (Path(args.file_a).resolve(), Path(args.file_b).resolve())
+        if Path(args.json).resolve() in inputs:
+            print("error: --json path must not be one of the input files", file=sys.stderr)
+            return EXIT_ERROR
+        try:
+            exporter.write_json_report(
+                result, args.json, key_col=args.key, file_a=args.file_a, file_b=args.file_b
+            )
+        except OSError as err:
+            print(f"error: cannot write {args.json}: {err.strerror}", file=sys.stderr)
+            return EXIT_ERROR
+
     use_color = sys.stdout.isatty() and not args.no_color
     print(printer.render_diff_terminal(result, use_color=use_color))
+    if args.json is not None:
+        print(f"\nJSON report saved to {args.json}")
     return EXIT_OK
 
 
