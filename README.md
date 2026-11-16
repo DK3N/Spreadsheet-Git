@@ -15,7 +15,7 @@ Given an old CSV, a new CSV, and an ID column, the tool reports:
 - **Modified** rows: same ID in both files, with the old and new value of each changed column
 - Summary counts for each of the above
 
-Planned for Sprint 2: schema changes (added, removed, reordered columns), comparing only selected columns, JSON report export, and grouped, readable terminal output.
+Planned for Sprint 2: schema changes (added, removed, reordered columns), comparing only selected columns, JSON report export.
 
 Out of scope: a graphical interface, full version history, merge-conflict resolution, and live collaboration.
 
@@ -48,13 +48,20 @@ python -m src.cli diff testing/test_cases/test_case_example/base.csv testing/tes
 Output:
 
 ```
+Added (1)
++ INSERTED  key=109  (now row 4)
+
+Removed (1)
+- DELETED  key=106  (was row 7)
+
+Modified (2)
 ~ MODIFIED  key=103  (row 4 -> row 3)
     salary: '91000' -> '95000'
-+ INSERTED  key=109  (now row 4)
-> MOVED  key=102  (row 3 -> row 8)
 ~> MOVED AND MODIFIED  key=104  (row 5 -> row 9)
     department: 'Sales' -> 'Marketing'
-- DELETED  key=106  (was row 7)
+
+Moved (1)
+> MOVED  key=102  (row 3 -> row 8)
 
 Summary: 1 added, 1 removed, 2 modified, 1 moved
 ```

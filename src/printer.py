@@ -25,6 +25,12 @@ STYLE = {
     ChangeType.MOVED_AND_MODIFIED: (YELLOW, "~>"),
 }
 
+SECTIONS = [
+    ("Added", [ChangeType.INSERTED]),
+    ("Removed", [ChangeType.DELETED]),
+    ("Modified", [ChangeType.MODIFIED, ChangeType.MOVED_AND_MODIFIED]),
+    ("Moved", [ChangeType.MOVED]),
+]
 
 def _paint(text: str, color: str, use_color: bool) -> str:
     """Wraps text in an ANSI color code, or returns it unchanged if color is off."""
@@ -106,8 +112,14 @@ def render_diff_terminal(diff: DiffResult, use_color: bool = True) -> str:
         if has_column_changes:
             lines.append("Row Changes:")
 
-        for change in changes:
-            lines.extend(_render_row(change, use_color))
+        for title, change_types in SECTIONS:
+            group = [c for c in changes if c.change_type in change_types]
+            if not group:
+                continue
+            lines.append(f"{title} ({len(group)})")
+            for change in group:
+                lines.extend(_render_row(change, use_color))
+            lines.append("")
 
         kinds = [c.change_type for c in changes]
         added = kinds.count(ChangeType.INSERTED)
@@ -120,7 +132,6 @@ def render_diff_terminal(diff: DiffResult, use_color: bool = True) -> str:
         if moved:
             summary += f", {moved} moved"
 
-        lines.append("")
         lines.append(f"Summary: {summary}")
 
     else:
