@@ -128,6 +128,14 @@ GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every 
 - Both files must be valid CSV with a header row and the same number of values on every row.
 - All values are compared as text (`1` and `01` are different).
 
+## AI use
+
+This project was built with help from an AI coding assistant (Claude Code, by Anthropic). It was used to write and edit code, tests, and documentation.
+
+- **Requirements came from us.** The AI was directed to build from our team's user criteria and acceptance criteria (kept in a shared Google Doc), and we checked the work against those criteria.
+- **We reviewed the output.** AI-written code and test fixtures were read and checked by a team member, and the test suite (`python -m pytest`) was run before merging. We questioned and corrected the AI where its output was unclear or didn't match the criteria.
+- **Commits show it.** Commits with AI assistance include a `Co-Authored-By: Claude` line in the commit message.
+
 ## Team
 
 Zackary, David, Joseph, Sarah, Emely
