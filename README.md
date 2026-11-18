@@ -128,6 +128,13 @@ GitHub Actions (`.github/workflows/tests.yml`) runs `python -m pytest` on every 
 - Both files must be valid CSV with a header row and the same number of values on every row.
 - All values are compared as text (`1` and `01` are different).
 
+## Privacy
+
+The tool runs locally. It makes no network calls and keeps no logs or copies of your data.
+
+- **`--json` copies real values.** The report contains the old and new value of every changed cell, so a report made from real data (salaries, student records) is sensitive. `report.json` is in `.gitignore`; don't commit or share reports.
+- **Sample data only.** Files in `testing/test_cases/` must contain made-up data, and real data shouldn't be shared with AI tools.
+
 ## AI use
 
 This project was built with help from an AI coding assistant (Claude Code, by Anthropic). It was used to write and edit code, tests, and documentation.

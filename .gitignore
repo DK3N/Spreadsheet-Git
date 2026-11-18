@@ -5,3 +5,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .vscode
+
+# Generated diff reports may contain real data
+report.json
